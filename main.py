@@ -14,16 +14,17 @@ import pygame
 import os
 import time
 from random import randint, uniform
-from utils import *
 from datetime import datetime, timedelta
 from math import sin, cos, pi
 
 pygame.font.init()
+pygame.init()
 
 
 """ Game constants"""
 
 FPS = 60
+DYING = 30
 WIDTH, HEIGHT = 900, 500
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Strooped!")
@@ -78,7 +79,7 @@ font_p = pygame.font.SysFont("sfnsmono", 36)
 
 """ HEART IMG """
 # Heart dimensions
-HEART_D = 10
+HEART_D = 30
 # Red heart 
 LIFE_IMG = pygame.image.load(
     os.path.join('Assets', 'red.png')
@@ -95,6 +96,21 @@ DEAD = pygame.transform.scale(
 )
 
 
+class Colword:
+    def __init__(self, word, colour, birth, left, top, dir):
+        # (str) Colour word 
+        self.word = word
+        # RGB code
+        self.colour = colour
+        # Time of birth
+        self.birth = birth
+        # Left pos
+        self.left = left
+        # Top pos
+        self.top = top
+        # Direction of motion in degrees
+        self.dir = dir
+
 
 # FUNCTIONS -----------------------------------------------------------------------------+
 
@@ -110,7 +126,25 @@ def in_bound(x, y, left, top, w, h):
     return False
 
 
-def draw_win(words, r, col, lives, clicked, x, y):
+
+def draw_home(rand_col):
+    """ Draw intro/title page """
+
+    # Draw banner of colour boxes
+    for i in range(len(rgb)):
+        pygame.draw.rect(WIN, rgb[i], pygame.Rect(111 + i * 80, 30, 30, 30))
+
+    # Draw title
+    title = font_h1.render("STROOPED!", True, rand_col)
+    WIN.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 3 - title.get_height() // 2))
+    
+    # Draw extra text
+    mini = font_mini.render("How well can you distinguish your colours?", True, rand_col)
+    WIN.blit(mini, (WIDTH // 2 - mini.get_width() // 2, HEIGHT * 3 // 4))
+ 
+
+
+def draw_win(words, r, col, lives, captures, clock, clicked, x, y):
     """
     Draw game window
     :param words: (list) Colword objects
@@ -122,6 +156,7 @@ def draw_win(words, r, col, lives, clicked, x, y):
     pygame.draw.rect(WIN, BLACK, BORDER_B)
 
     to_del = []
+    lost = 0
 
     for i in range(len(words)):
         # draw
@@ -138,36 +173,52 @@ def draw_win(words, r, col, lives, clicked, x, y):
         captured = clicked and in_bound(x, y, words[i].left, words[i].top, text.get_width(), text.get_height())
         if out or (captured and words[i].colour == col):
             to_del.append(i)
-        if out and words[i].colour == col:
-            lives -= 1
+            if captured:
+                # INCREASE CAPTURE NUM
+                captures += 1
+            elif words[i].colour == col:
+                # Since not captured, it must be out
+                lost += 1
 
     for i in to_del[::-1]:
         words.pop(i)
-    # DRAW LIVES
-    pygame.display.update()
     
-
-def draw_home(rand_col):
-    """ Draw intro/title page """
-
-    # Draw banner of colour boxes
-    for i in range(len(rgb)):
-        pygame.draw.rect(WIN, rgb[i], pygame.Rect(111 + i * 80, 30, 30, 30))
-
-    # Draw title
-    title = font_h1.render("STROOPED!", True, rand_col)
-    WIN.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 3 - title.get_height() // 2))
-    
-    # Draw extra text
-    mini = font_mini.render("How well can you distinguish your colours?", True, rand_col)
-    WIN.blit(mini, (WIDTH // 2 - mini.get_width() // 2, HEIGHT * 3 // 4))
-          
+    w = WIDTH - 60
+    # Draw red hearts
+    for i in range(lives):
+        WIN.blit(LIFE, (w, 20))
+        w -= 50
+    # Draw lost hearts
+    for i in range(3 - lives):
+        WIN.blit(DEAD, (w, 20))
+        w -= 50
+    # Move blit cursor back to most left red heart
+    w += 50 * (3 - lives + 1)
     pygame.display.update()
+    # Transition red to lost hearts
+    for i in range(lost):
+        # Enlarge red heart
+        for j in range(10):
+            clock.tick(DYING)
+            WIN.blit(pygame.transform.scale(LIFE_IMG, (HEART_D + j, HEART_D + j)), (int(w - j/2), int(20 - j/2)))
+            pygame.display.update()
+        # Change colour and reduce size
+        for j in range(10, 0, -1):
+            clock.tick(DYING)
+            pygame.draw.rect(WIN, WHITE, pygame.Rect(w - 5, 15, 40, 40))
+            WIN.blit(pygame.transform.scale(DEAD_IMG, (HEART_D + j, HEART_D + j)), (int(w - j/2), int(20 - j/2)))
+            pygame.display.update()
+        w += 50
+        
+    # Update lives var
+    return lives - lost, captures
+
 
 
 def main():
     clock = pygame.time.Clock()
-    rand_num = randint(0, 6)
+    # rand_num = randint(0, 6)
+    rand_num = randint(0, 1)
     # ^ randnum (randint(0, SOME VAR that might changes every round))
     rand_col = rgb[rand_num]  
     rand_word = letter[rand_num]
@@ -180,6 +231,7 @@ def main():
     r = 3
     x, y = 0, 0
     lives = 3
+    captures = 0
 
     while run:
         clock.tick(FPS)
@@ -191,7 +243,6 @@ def main():
             if in_game and event.type == pygame.MOUSEBUTTONUP:
                 clicked = True
                 x, y = pygame.mouse.get_pos()
-                print(x, y)
             # elif in_home and event.type == pygame.MOUSEBUTTONUP
 
         WIN.fill(WHITE)
@@ -213,7 +264,10 @@ def main():
             menu_man_rect = menu_man.get_rect()
             menu_man_rect.center = menu_man_btn.center
             pygame.draw.rect(WIN, WHITE, menu_man_btn)
-            WIN.blit(menu_man, menu_man_rect)            
+            WIN.blit(menu_man, menu_man_rect)   
+
+            pygame.display.update()
+         
             
             # Check if button is clicked
             click, _, _ = pygame.mouse.get_pressed()
@@ -227,7 +281,7 @@ def main():
                     play = font_h1.render(f"CLICK FOR {rand_word}!", True, rand_col)
                     WIN.blit(play, (WIDTH // 2 - play.get_width() // 2, HEIGHT // 2 - play.get_height() // 2))
                     pygame.display.update()
-                    time.sleep(3)
+                    time.sleep(0.5)
 
                 elif menu_man_btn.collidepoint(mouse):
                     time.sleep(0.2)
@@ -236,7 +290,7 @@ def main():
 
 
         elif in_game:
-            draw_win(curr_words, r, rand_col, lives, clicked, x, y)
+            lives, captures = draw_win(curr_words, r, rand_col, lives, captures, clock, clicked, x, y)
             now = datetime.now()
 
             # Create new Colword and add btn on the screen
@@ -255,8 +309,8 @@ def main():
                 pygame.draw.rect(WIN, WHITE, text_btn)
                 WIN.blit(text, text_rect)
                 pygame.display.update()
-            # if lives <= 0:
-            #     game_over()
+            if lives <= 0:
+                return 0
 
         elif in_man:
             draw_win()
@@ -272,9 +326,6 @@ if __name__ == "__main__":
 
 
 """
-
-add text btn into a list
-
 list for levels and dict for each val in list to speed of words
 
 as leveling up, fewer colours, more words at same time
