@@ -1,11 +1,26 @@
+# PROGRAM DESCRIPTIONS =========================================================>
+
+# Name: Maggie Liu
+# Date: Friday, 21 January 2022 
+# Title: Strooped!
+# Description: Simulating the Stroop Effect through a game to discern colours of words rather than the word of the colour
+
+# ==============================================================================>
+
+
+""" Imports """
 import pygame
+import os
 import time
-from random import randint
-# from queue import Queue
-from features import *
+from random import randint, uniform
+from utils import *
 from datetime import datetime, timedelta
+from math import sin, cos, pi
 
 pygame.font.init()
+
+
+""" Game constants"""
 
 FPS = 60
 WIDTH, HEIGHT = 900, 500
@@ -60,27 +75,99 @@ font_mini = pygame.font.SysFont("ptmono", 18)
 font_p = pygame.font.SysFont("sfnsmono", 36)
 
 
-def draw_win(words):
+""" HEART IMG """
+# Heart dimensions
+HEART_D = 10
+# Red heart 
+LIFE_IMG = pygame.image.load(
+    os.path.join('Assets', 'red.png')
+)
+LIFE = pygame.transform.scale(
+    LIFE_IMG, (HEART_D, HEART_D)
+)
+# Grey heart
+DEAD_IMG = pygame.image.load(
+    os.path.join('Assets', 'grey.png')
+)
+DEAD = pygame.transform.scale(
+    DEAD_IMG, (HEART_D, HEART_D)
+)
+
+
+
+# FUNCTIONS -----------------------------------------------------------------------------+
+
+def out_of_bounds(left, top, w, h):
+    if left <= BORD_WIDTH or top <= BORD_WIDTH or left + w >= WIDTH - BORD_WIDTH or top + h >= HEIGHT - BORD_WIDTH:
+        return True
+    return False
+
+
+def in_bound(x, y, left, top, w, h):
+    if left <= x <= left + w and top <= y <= top + h:
+        return True
+    return False
+
+
+def draw_win(words, r, col, lives, clicked, x, y):
+    """
+    Draw game window
+    :param words: (list) Colword objects
+    :param r: (int) 
+    """
     pygame.draw.rect(WIN, BLACK, BORDER_L)
     pygame.draw.rect(WIN, BLACK, BORDER_R)
     pygame.draw.rect(WIN, BLACK, BORDER_T)
     pygame.draw.rect(WIN, BLACK, BORDER_B)
 
-    for obj in words:
+    to_del = []
+
+    for i in range(len(words)):
         # draw
+        obj = words[i]
         text = font_p.render(obj.word, True, obj.colour)
         text_btn = pygame.Rect(obj.left, obj.top, text.get_width(), text.get_height())
         text_rect = text.get_rect()
         text_rect.center = text_btn.center
         pygame.draw.rect(WIN, WHITE, text_btn)
         WIN.blit(text, text_rect)
+        words[i].left += int(cos(words[i].dir) * r)
+        words[i].top += int(sin(words[i].dir) * r)
+        out = out_of_bounds(words[i].left, words[i].top, text.get_width(), text.get_height())
+        captured = clicked and in_bound(x, y, words[i].left, words[i].top, text.get_width(), text.get_height())
+        if out or (captured and words[i].colour == col):
+            to_del.append(i)
+        if out and words[i].colour == col:
+            lives -= 1
 
+    for i in to_del[::-1]:
+        words.pop(i)
+    # DRAW LIVES
+    pygame.display.update()
+    
+
+def draw_home(rand_col):
+    """ Draw intro/title page """
+
+    # Draw banner of colour boxes
+    for i in range(len(rgb)):
+        pygame.draw.rect(WIN, rgb[i], pygame.Rect(111 + i * 80, 30, 30, 30))
+
+    # Draw title
+    title = font_h1.render("STROOPED!", True, rand_col)
+    WIN.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 3 - title.get_height() // 2))
+    
+    # Draw extra text
+    mini = font_mini.render("How well can you distinguish your colours?", True, rand_col)
+    WIN.blit(mini, (WIDTH // 2 - mini.get_width() // 2, HEIGHT * 3 // 4))
+          
     pygame.display.update()
 
 
 def main():
     clock = pygame.time.Clock()
     rand_num = randint(0, 6)
+    # ^ randnum (randint(0, SOME VAR that might changes every round))
     rand_col = rgb[rand_num]  
     rand_word = letter[rand_num]
     run = True
@@ -88,36 +175,31 @@ def main():
     in_man = False
     in_game = False
     curr_words = []
+    # Rate of motion
+    r = 3
+    x, y = 0, 0
+    lives = 3
 
     while run:
         clock.tick(FPS)
+        clicked = False
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-
-            # if event.type == pygame.MOUSEBUTTONUP:
-            #     pos = pygame.mouse.get_pos()
+            x, y, = 0, 0
+            if in_game and event.type == pygame.MOUSEBUTTONUP:
+                clicked = True
+                x, y = pygame.mouse.get_pos()
+                print(x, y)
+            # elif in_home and event.type == pygame.MOUSEBUTTONUP
 
         WIN.fill(WHITE)
 
         if in_home:
-
-            """ Draw intro/title page """
-
-            # Draw banner of colour boxes
-            for i in range(len(rgb)):
-                pygame.draw.rect(WIN, rgb[i], pygame.Rect(111 + i * 80, 30, 30, 30))
-
-            # Draw title
-            title = font_h1.render("STROOPED!", True, rand_col)
-            WIN.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 3 - title.get_height() // 2))
-            
-            # Draw extra text
-            mini = font_mini.render("How well can you distinguish your colours?", True, rand_col)
-            WIN.blit(mini, (WIDTH // 2 - mini.get_width() // 2, HEIGHT * 3 // 4))
+            # Draw home win
+            draw_home(rand_col)
 
             # Draw menu buttons
-
             menu_play = font_info.render("PLAY", True, GOLD)
             menu_play_btn = pygame.Rect((WIDTH//2 - menu_play.get_width() // 2, HEIGHT//2 - 25, menu_play.get_width(), menu_play.get_height()))
             menu_play_rect = menu_play.get_rect()
@@ -131,8 +213,6 @@ def main():
             menu_man_rect.center = menu_man_btn.center
             pygame.draw.rect(WIN, WHITE, menu_man_btn)
             WIN.blit(menu_man, menu_man_rect)            
-
-            pygame.display.update()
             
             # Check if button is clicked
             click, _, _ = pygame.mouse.get_pressed()
@@ -140,7 +220,6 @@ def main():
                 mouse = pygame.mouse.get_pos()
                 if menu_play_btn.collidepoint(mouse):
                     time.sleep(0.2)
-                    # TO-DO: Change bg 
                     in_home = False
                     in_game = True
                     WIN.fill(WHITE)
@@ -153,38 +232,30 @@ def main():
                     time.sleep(0.2)
                     in_home = False
                     in_man = True
+
+
         elif in_game:
-            draw_win(curr_words)
+            draw_win(curr_words, r, rand_col, lives, clicked, x, y)
             now = datetime.now()
 
-            # click, _, _ = pygame.mouse.get_pressed()
-            # if click == 1:
-            #     mouse = pygame.mouse.get_pos()
-            #     if menu_play_btn.collidepoint(mouse):
-
-            # check state of first to see if it should disappear
-            # check state of last to see if another should be added 
+            # Create new Colword and add btn on the screen
             if len(curr_words) == 0 or curr_words[-1].birth < now - timedelta(seconds=1):
                 
                 word = letter[randint(0, N - 1)]
                 col = rgb[randint(0, N - 1)]
                 
-                # print(add.word, add.colour)
                 text = font_p.render(word, True, col)
                 w = randint(0, WIDTH - text.get_width())
                 h = randint(0, HEIGHT - text.get_height())
-                curr_words.append(Colword(word, col, now, w, h))
+                curr_words.append(Colword(word, col, now, w, h, uniform(0, 2 * pi)))
                 text_btn = pygame.Rect(w, h, text.get_width(), text.get_height())
                 text_rect = text.get_rect()
                 text_rect.center = text_btn.center
                 pygame.draw.rect(WIN, WHITE, text_btn)
                 WIN.blit(text, text_rect)
                 pygame.display.update()
-            while len(curr_words) > 0 and curr_words[0].birth < now - timedelta(seconds=4):
-                curr_words.pop(0)
-
-
-
+            # if lives <= 0:
+            #     game_over()
 
         elif in_man:
             draw_win()
@@ -205,9 +276,5 @@ add text btn into a list
 
 list for levels and dict for each val in list to speed of words
 
-lowering opacity, moving
-using keys as remote than mouse??? idk whatz the point of th sy tho
-
-global val
-- vel of words
+as leveling up, fewer colours, more words at same time
 """
