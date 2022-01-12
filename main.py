@@ -2,6 +2,7 @@
 
 # Name: Maggie Liu
 # Date: Friday, 21 January 2022 
+# Course: ICS3U
 # Title: Strooped!
 # Description: Simulating the Stroop Effect through a game to discern colours of words rather than the word of the colour
 
