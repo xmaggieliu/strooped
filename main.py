@@ -10,6 +10,7 @@
 
 
 """ Imports """
+
 import pygame
 import os
 import time
@@ -43,43 +44,11 @@ BORDER_T = pygame.Rect(0, 0, WIDTH, BORD_WIDTH)
 BORDER_B = pygame.Rect(0, HEIGHT - BORD_WIDTH, WIDTH, BORD_WIDTH)
 
 
-""" RGB Colour Code Constants """
-
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-
-BLUE = (0, 64, 255)
-RED = (200, 30, 40)
-GREEN = (0, 150, 30)
-PURPLE = (150, 0, 205)
-ORANGE = (255, 92, 0)
-CYAN = (0, 180, 171)
-PINK = (220, 40, 140)
-GRAY = (72, 72, 72)
-GOLD = (175, 130, 30)
-
-# Colour word to rgb code dictionary
-colour_rgb = {"BLUE": BLUE, "RED": RED, "GREEN": GREEN, "PURPLE": PURPLE, "ORANGE": ORANGE, "CYAN": CYAN, "PINK": PINK, "GRAY": GRAY, "GOLD": GOLD}
-# Tuple of RGB values
-rgb = tuple(colour_rgb.values())
-# Tuple of strings of colours
-letter = tuple(colour_rgb.keys())
-# Num of colours
-N = len(letter)
-
-
-""" Fonts """
-# intro title bg will be gray
-font_h1 = pygame.font.SysFont("ptmono", 60)
-font_info = pygame.font.SysFont("andalemono", 32)
-font_mini = pygame.font.SysFont("ptmono", 18)
-
-font_p = pygame.font.SysFont("sfnsmono", 36)
-
-
 """ HEART IMG """
+
 # Heart dimensions
 HEART_D = 30
+
 # Red heart 
 LIFE_IMG = pygame.image.load(
     os.path.join('Assets', 'red.png')
@@ -96,6 +65,39 @@ DEAD = pygame.transform.scale(
 )
 
 
+""" RGB Colour Code Constants """
+
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+
+BLUE = (0, 64, 255)
+RED = (200, 30, 40)
+GREEN = (0, 150, 30)
+PURPLE = (150, 0, 205)
+ORANGE = (255, 92, 0)
+CYAN = (0, 180, 171)
+PINK = (220, 40, 140)
+GRAY = (72, 72, 72)
+GOLD = (175, 130, 30)
+
+
+levels = ((1, 2), (1, 1.5), (3, 1.5), (3, 1), (6, 1), (6, 0.5))
+
+# Tuple of RGB values
+rgb = (BLUE, RED, GREEN, PURPLE, ORANGE, CYAN, PINK, GRAY, GOLD)
+# Tuple of strings of colours
+letter = ("BLUE", "RED", "GREEN", "PURPLE", "ORANGE", "CYAN", "PINK")
+
+
+""" Fonts """
+# intro title bg will be gray
+font_h1 = pygame.font.SysFont("ptmono", 60)
+font_info = pygame.font.SysFont("andalemono", 28)
+font_mini = pygame.font.SysFont("ptmono", 18)
+font_p = pygame.font.SysFont("sfnsmono", 36)
+
+
+""" Data Struct """
 class Colword:
     def __init__(self, word, colour, birth, left, top, dir):
         # (str) Colour word 
@@ -112,15 +114,63 @@ class Colword:
         self.dir = dir
 
 
+
 # FUNCTIONS -----------------------------------------------------------------------------+
 
+def get_rad(x, y):
+    """ 
+    Get direction of travel in radians
+    :param x: (int) current x position; horizontal position; how right it is on the screen
+    :param y: (int) current y position; vertical position; how down it is on the screen
+    :return: (float) direction of travel in radian
+    """
+    print(x, y)
+
+    if y < HEIGHT / 2:
+        # If coord in first quadrant
+        if x > WIDTH / 2:
+            print("Q1")
+            return uniform(pi / 2, pi)
+        # => coord in second quad
+        print("Q2")
+        return uniform(0, pi / 2)
+
+    # => coord is Q3 or Q4
+    # If Q3
+    if x < WIDTH / 2:
+        print("Q3")
+        return uniform(3 * pi / 2, 2 * pi)
+    # Then Q4
+    print("q4")
+    return uniform(pi, 3 * pi / 2)
+
+
+
 def out_of_bounds(left, top, w, h):
-    if left <= BORD_WIDTH or top <= BORD_WIDTH or left + w >= WIDTH - BORD_WIDTH or top + h >= HEIGHT - BORD_WIDTH:
+    """
+    If text touched the boundary
+    :param left: (int) coord of the left of text
+    :param top: (int) coord of the top of text
+    :param w: (int) width of text
+    :pram h: (int) height of text
+    """
+    if left <= BORD_WIDTH or top <= BORD_WIDTH + HEART_D or left + w >= WIDTH - BORD_WIDTH or top + h >= HEIGHT - BORD_WIDTH:
         return True
     return False
 
 
+
 def in_bound(x, y, left, top, w, h):
+    """
+    If mouse click is on the text
+    :param x: (int) x coord of mouse
+    :param y: (int) y xoord of mouse
+    :param left: (int) left coord of text
+    :param top: (int) top coord of text
+    :param w: (int) width of text
+    :param h: (int) height of text
+    :return: (bool) whether the mouse clicked inside the text's boundary 
+    """
     if left <= x <= left + w and top <= y <= top + h:
         return True
     return False
@@ -144,7 +194,7 @@ def draw_home(rand_col):
  
 
 
-def draw_win(words, r, col, lives, captures, clock, clicked, x, y):
+def draw_game(words, r, col, lives, clock, clicked, x, y):
     """
     Draw game window
     :param words: (list) Colword objects
@@ -157,6 +207,7 @@ def draw_win(words, r, col, lives, captures, clock, clicked, x, y):
 
     to_del = []
     lost = 0
+    captured = False
 
     for i in range(len(words)):
         # draw
@@ -170,15 +221,12 @@ def draw_win(words, r, col, lives, captures, clock, clicked, x, y):
         words[i].left += int(cos(words[i].dir) * r)
         words[i].top += int(sin(words[i].dir) * r)
         out = out_of_bounds(words[i].left, words[i].top, text.get_width(), text.get_height())
-        captured = clicked and in_bound(x, y, words[i].left, words[i].top, text.get_width(), text.get_height())
-        if out or (captured and words[i].colour == col):
+        captured = clicked and in_bound(x, y, words[i].left, words[i].top, text.get_width(), text.get_height()) and words[i].colour == col
+        if captured or out:
             to_del.append(i)
-            if captured:
-                # INCREASE CAPTURE NUM
-                captures += 1
-            elif words[i].colour == col:
-                # Since not captured, it must be out
-                lost += 1
+        if out and words[i].colour == col:
+            to_del.append(i)
+            lost += 1
 
     for i in to_del[::-1]:
         words.pop(i)
@@ -211,31 +259,41 @@ def draw_win(words, r, col, lives, captures, clock, clicked, x, y):
         w += 50
         
     # Update lives var
-    return lives - lost, captures
+    return lives - lost, captured
 
 
 
 def main():
     clock = pygame.time.Clock()
-    # rand_num = randint(0, 6)
-    rand_num = randint(0, 1)
-    # ^ randnum (randint(0, SOME VAR that might changes every round))
-    rand_col = rgb[rand_num]  
-    rand_word = letter[rand_num]
     run = True
     in_home = True
     in_man = False
     in_game = False
     curr_words = []
     # Rate of motion
-    r = 3
+    r = 1.4
+
     x, y = 0, 0
     lives = 3
     captures = 0
+    # Current level
+    l = 0
+    col_variety = 1
+    rand_num = randint(0, col_variety)
+    rand_col = rgb[rand_num] 
+    
 
     while run:
         clock.tick(FPS)
         clicked = False
+        col_variety, birth_rate = levels[l]
+        r = 1.4 + captures * 0.1
+        # If level up!
+        if l != captures // 5:
+            l = captures // 5
+            # New colours
+            rand_num = randint(0, col_variety)
+            rand_col = rgb[rand_num] 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -243,7 +301,6 @@ def main():
             if in_game and event.type == pygame.MOUSEBUTTONUP:
                 clicked = True
                 x, y = pygame.mouse.get_pos()
-            # elif in_home and event.type == pygame.MOUSEBUTTONUP
 
         WIN.fill(WHITE)
 
@@ -278,7 +335,7 @@ def main():
                     in_home = False
                     in_game = True
                     WIN.fill(WHITE)
-                    play = font_h1.render(f"CLICK FOR {rand_word}!", True, rand_col)
+                    play = font_h1.render(f"CLICK FOR {letter[rand_num]}!", True, rand_col)
                     WIN.blit(play, (WIDTH // 2 - play.get_width() // 2, HEIGHT // 2 - play.get_height() // 2))
                     pygame.display.update()
                     time.sleep(0.5)
@@ -290,30 +347,35 @@ def main():
 
 
         elif in_game:
-            lives, captures = draw_win(curr_words, r, rand_col, lives, captures, clock, clicked, x, y)
+            count_info = font_info.render("LEVEL: " + str(l) + "  CAPTURES: " + str(captures) + "  COLOUR: " + str(letter[rand_num]), True, GOLD, WHITE)
+            WIN.blit(count_info, (20, 20))
+            lives, captured = draw_game(curr_words, r, rand_col, lives, clock, clicked, x, y)
+            if captured:
+                print("CAPTURED!!")
+                captures += 1
             now = datetime.now()
 
             # Create new Colword and add btn on the screen
-            if len(curr_words) == 0 or curr_words[-1].birth < now - timedelta(seconds=1):
+            if len(curr_words) == 0 or curr_words[-1].birth < now - timedelta(seconds=birth_rate):
                 
-                word = letter[randint(0, N - 1)]
-                col = rgb[randint(0, N - 1)]
+                word = letter[randint(0, col_variety)]
+                col = rgb[randint(0, col_variety)]
                 
                 text = font_p.render(word, True, col)
-                w = randint(0, WIDTH - text.get_width())
-                h = randint(0, HEIGHT - text.get_height())
-                curr_words.append(Colword(word, col, now, w, h, uniform(0, 2 * pi)))
+                w = randint(BORD_WIDTH, WIDTH - text.get_width() - BORD_WIDTH)
+                h = randint(BORD_WIDTH + HEART_D, HEIGHT - text.get_height() - BORD_WIDTH)
+                curr_words.append(Colword(word, col, now, w, h, get_rad(w, h)))
                 text_btn = pygame.Rect(w, h, text.get_width(), text.get_height())
                 text_rect = text.get_rect()
                 text_rect.center = text_btn.center
                 pygame.draw.rect(WIN, WHITE, text_btn)
                 WIN.blit(text, text_rect)
                 pygame.display.update()
-            if lives <= 0:
+            if lives <= 0 or captures >= 30:
                 return 0
 
         elif in_man:
-            draw_win()
+            draw_game()
             # TO-DO
 
         
@@ -329,4 +391,14 @@ if __name__ == "__main__":
 list for levels and dict for each val in list to speed of words
 
 as leveling up, fewer colours, more words at same time
+
+5 captures for leveling up in total 6 levels for 30 for central lim th
+Level 0: red + bleu, 2 sec
+Level 1: red + bleu, 1.5 seconds
+Level 2: red + blue + green + purple, 1.5 seconds
+Level 3: red + blue + green + purple 1 second
+Level 4: orange + cyan + pink
+Level 5: 0.5 seconds
+
 """
+
