@@ -326,7 +326,7 @@ def main():
             if click == 1:
                 mouse = pygame.mouse.get_pos()
                 if menu_play_btn.collidepoint(mouse):
-                    time.sleep(0.2)
+                    # time.sleep(0.2)
                     in_home = False
                     in_game = True
                     WIN.fill(WHITE)
@@ -336,7 +336,7 @@ def main():
                     time.sleep(0.5)
 
                 elif menu_man_btn.collidepoint(mouse):
-                    time.sleep(0.2)
+                    # time.sleep(0.2)
                     in_home = False
                     in_man = True
 

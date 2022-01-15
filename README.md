@@ -1,6 +1,5 @@
 # Strooped!
-ICS3U FINAL PROJECT
-A python game to test the Stroop effect - the delay in reaction time between congruent (same word and colour) and incongruent (different word and colour) stimuli.
+A python game to test the Stroop effect - the delay in reaction time between congruent (same word and colour) and incongruent (different word and colour) stimuli. Developed as an ICS3U final project.
 
 # Usage
 Run:
