@@ -18,6 +18,8 @@ from random import randint, uniform
 from datetime import datetime, timedelta
 from math import sin, cos, pi
 
+from pygame.font import Font
+
 pygame.font.init()
 pygame.init()
 
@@ -77,7 +79,7 @@ PURPLE = (150, 0, 205)
 ORANGE = (255, 92, 0)
 CYAN = (0, 180, 171)
 PINK = (220, 40, 140)
-GRAY = (72, 72, 72)
+GRAY = (211, 211, 211)
 GOLD = (175, 130, 30)
 
 
@@ -124,24 +126,19 @@ def get_rad(x, y):
     :param y: (int) current y position; vertical position; how down it is on the screen
     :return: (float) direction of travel in radian
     """
-    print(x, y)
 
     if y < HEIGHT / 2:
         # If coord in first quadrant
         if x > WIDTH / 2:
-            print("Q1")
             return uniform(pi / 2, pi)
         # => coord in second quad
-        print("Q2")
         return uniform(0, pi / 2)
 
     # => coord is Q3 or Q4
     # If Q3
     if x < WIDTH / 2:
-        print("Q3")
         return uniform(3 * pi / 2, 2 * pi)
     # Then Q4
-    print("q4")
     return uniform(pi, 3 * pi / 2)
 
 
@@ -179,17 +176,25 @@ def in_bound(x, y, left, top, w, h):
 
 def draw_home(rand_col):
     """ Draw intro/title page """
+    n = len(letter) - 1
+    w, h = 0, 0
+    while h < HEIGHT:
+        while w < WIDTH:
+            bg = font_p.render(letter[randint(0, n)], True, GRAY)
+            WIN.blit(bg, (w, h))
+            w += bg.get_width()
+        h += bg.get_height()
+        w = 0
 
-    # Draw banner of colour boxes
-    for i in range(len(rgb)):
-        pygame.draw.rect(WIN, rgb[i], pygame.Rect(111 + i * 80, 30, 30, 30))
+    # Draw background box
+    pygame.draw.rect(WIN, WHITE, pygame.Rect(WIDTH // 5, HEIGHT//3 - 60, WIDTH - 2 * (WIDTH // 5), HEIGHT - 2 * (HEIGHT//3 - 70)))
 
     # Draw title
-    title = font_h1.render("STROOPED!", True, rand_col)
+    title = font_h1.render("STROOPED!", True, rand_col, WHITE)
     WIN.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 3 - title.get_height() // 2))
     
     # Draw extra text
-    mini = font_mini.render("How well can you distinguish your colours?", True, rand_col)
+    mini = font_mini.render("How well can you distinguish your colours?", True, rand_col, WHITE)
     WIN.blit(mini, (WIDTH // 2 - mini.get_width() // 2, HEIGHT * 3 // 4))
  
 
@@ -213,15 +218,11 @@ def draw_game(words, r, col, lives, clock, clicked, x, y):
         # draw
         obj = words[i]
         text = font_p.render(obj.word, True, obj.colour)
-        text_btn = pygame.Rect(obj.left, obj.top, text.get_width(), text.get_height())
-        text_rect = text.get_rect()
-        text_rect.center = text_btn.center
-        pygame.draw.rect(WIN, WHITE, text_btn)
-        WIN.blit(text, text_rect)
+        WIN.blit(text, (obj.left, obj.top))
         words[i].left += int(cos(words[i].dir) * r)
         words[i].top += int(sin(words[i].dir) * r)
         out = out_of_bounds(words[i].left, words[i].top, text.get_width(), text.get_height())
-        captured = clicked and in_bound(x, y, words[i].left, words[i].top, text.get_width(), text.get_height()) and words[i].colour == col
+        captured = captured or (clicked and in_bound(x, y, words[i].left, words[i].top, text.get_width(), text.get_height()) and words[i].colour == col)
         if captured or out:
             to_del.append(i)
         if out and words[i].colour == col:
@@ -258,7 +259,6 @@ def draw_game(words, r, col, lives, clock, clicked, x, y):
             pygame.display.update()
         w += 50
         
-    # Update lives var
     return lives - lost, captured
 
 
@@ -286,14 +286,7 @@ def main():
     while run:
         clock.tick(FPS)
         clicked = False
-        col_variety, birth_rate = levels[l]
-        r = 1.4 + captures * 0.1
-        # If level up!
-        if l != captures // 5:
-            l = captures // 5
-            # New colours
-            rand_num = randint(0, col_variety)
-            rand_col = rgb[rand_num] 
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -306,7 +299,9 @@ def main():
 
         if in_home:
             # Draw home win
+            clock.tick(3)
             draw_home(rand_col)
+            
 
             # Draw menu buttons
             menu_play = font_info.render("PLAY", True, GOLD)
@@ -347,12 +342,38 @@ def main():
 
 
         elif in_game:
+            col_variety, birth_rate = levels[l]
+            r = 1.4 + captures * 0.1
             count_info = font_info.render("LEVEL: " + str(l) + "  CAPTURES: " + str(captures) + "  COLOUR: " + str(letter[rand_num]), True, GOLD, WHITE)
             WIN.blit(count_info, (20, 20))
+            # pygame.display.update()
             lives, captured = draw_game(curr_words, r, rand_col, lives, clock, clicked, x, y)
+            
             if captured:
-                print("CAPTURED!!")
                 captures += 1
+            # If level up!
+
+
+            # IF OVER 30 THEN GO INFINITE
+            if l != captures // 5:
+                l = captures // 5
+                # New colours
+                rand_num = randint(0, col_variety)
+                rand_col = rgb[rand_num]
+                info = "LEVEL: " + str(l) + "  CAPTURES: " + str(captures) + "  COLOUR: " + str(letter[rand_num]) 
+                font_weight = 28
+                for j in range(3):
+                    clock.tick(DYING)
+                    count_info = pygame.font.SysFont("andalemono", font_weight + j).render(info, True, rand_col, WHITE)
+                    WIN.blit(count_info, (int(20 - j/2), int(20 - j/2)))
+                    pygame.display.update()
+                # Change colour and reduce size
+                for j in range(3, 0, -1):
+                    clock.tick(DYING)
+                    count_info = pygame.font.SysFont("andalemono", font_weight + j).render(info, True, rand_col, WHITE)
+                    WIN.blit(count_info, (int(20 - j/2), int(20 - j/2)))
+                    pygame.display.update()
+
             now = datetime.now()
 
             # Create new Colword and add btn on the screen
@@ -365,13 +386,10 @@ def main():
                 w = randint(BORD_WIDTH, WIDTH - text.get_width() - BORD_WIDTH)
                 h = randint(BORD_WIDTH + HEART_D, HEIGHT - text.get_height() - BORD_WIDTH)
                 curr_words.append(Colword(word, col, now, w, h, get_rad(w, h)))
-                text_btn = pygame.Rect(w, h, text.get_width(), text.get_height())
-                text_rect = text.get_rect()
-                text_rect.center = text_btn.center
-                pygame.draw.rect(WIN, WHITE, text_btn)
-                WIN.blit(text, text_rect)
+                WIN.blit(text, (w, h))
                 pygame.display.update()
             if lives <= 0 or captures >= 30:
+                # PRINT RESULTS
                 return 0
 
         elif in_man:
