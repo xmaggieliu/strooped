@@ -97,6 +97,7 @@ font_h1 = pygame.font.SysFont("ptmono", 60)
 font_info = pygame.font.SysFont("andalemono", 28)
 font_mini = pygame.font.SysFont("ptmono", 18)
 font_p = pygame.font.SysFont("sfnsmono", 36)
+font_man = pygame.font.SysFont("worksans", 20)
 
 
 """ Data Struct """
@@ -187,7 +188,7 @@ def draw_home(rand_col):
         w = 0
 
     # Draw background box
-    pygame.draw.rect(WIN, WHITE, pygame.Rect(WIDTH // 5, HEIGHT//3 - 60, WIDTH - 2 * (WIDTH // 5), HEIGHT - 2 * (HEIGHT//3 - 70)))
+    pygame.draw.rect(WIN, WHITE, pygame.Rect(WIDTH // 5, HEIGHT//3 - 60, WIDTH - 2 * (WIDTH // 5), HEIGHT - 2 * (HEIGHT//3 - 70)), 200, 50)
 
     # Draw title
     title = font_h1.render("STROOPED!", True, rand_col, WHITE)
@@ -261,6 +262,40 @@ def draw_game(words, r, col, lives, clock, clicked, x, y):
         
     return lives - lost, captured
 
+
+def draw_man():
+    man = """
+After clicking `Play` in the home page, the window 
+will display the first colour for the user to click for. 
+Clicking the right coloured words will increase the 
+`Captures` score and missing the right coloured words 
+will result in a loss of life, indicated by a quick pause 
+in the game in which a red heart pops into a gray one. A word 
+will be considered to be missed when it hits one of the borders 
+of the game. 
+
+After every 5 captures, there will be a level up and a new 
+colour to be clicked for. The event of a level up will be also 
+be indicated by a quick pause in the game in which the game info 
+banner at the top of the window will enlarge in size and change 
+into the new colour to be clicked. After the banner returns to 
+the normal size, the game resumes and the user must click for 
+the new colour. 
+
+There are no penalties for clicking or missing a coloured word 
+that is not in focus for the current level. After reaching 30 
+captures, the levels are completed and the game runs 
+infinitely, while increasing in speed.
+"""
+    paraSize = (450, 250)
+    WIN.fill(WHITE)
+    man = man.splitlines()
+    h = font_man.get_height()
+    offset = (paraSize[1] - len(man) * (h + 1) // 2)
+    for i, line in enumerate(man):
+        currLine = font_man.render(line, False, BLACK)
+        currPos = (paraSize[0] - currLine.get_width() // 2, i * h + offset)
+        WIN.blit(currLine, currPos)
 
 
 def main():
@@ -339,7 +374,7 @@ def main():
                     # time.sleep(0.2)
                     in_home = False
                     in_man = True
-
+                    WIN.fill(WHITE)
 
         elif in_game:
             col_variety, birth_rate = levels[l]
@@ -354,9 +389,10 @@ def main():
             # If level up!
 
 
-            # IF OVER 30 THEN GO INFINITE
+            
             if l != captures // 5:
-                l = captures // 5
+                # level cannot surpass 5
+                l = min(captures // 5, 5)
                 # New colours
                 rand_num = randint(0, col_variety)
                 rand_col = rgb[rand_num]
@@ -393,8 +429,23 @@ def main():
                 return 0
 
         elif in_man:
-            draw_game()
-            # TO-DO
+            draw_man()
+            back = font_info.render("[HOME]", True, GOLD, WHITE)
+            back_btn = pygame.Rect(5, 20, back.get_width(), back.get_height())
+            back_rect = menu_play.get_rect()
+            back_rect.center = back_btn.center
+            pygame.draw.rect(WIN, WHITE, back_btn)
+            WIN.blit(back, back_rect)
+            pygame.display.update()
+
+            click, _, _ = pygame.mouse.get_pressed()
+            if click == 1:
+                mouse = pygame.mouse.get_pos()
+                if back_btn.collidepoint(mouse):
+                    # time.sleep(0.2)
+                    in_home = True
+                    in_man = False
+            
 
         
       

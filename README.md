@@ -10,6 +10,5 @@ After clicking `Play` in the home page, the window will display the first colour
 
 After every 5 captures, there will be a level up and a new colour to be clicked for. The event of a level up will be also be indicated by a quick pause in the game in which the game info banner at the top of the window will enlarge in size and change into the new colour to be clicked. After the banner returns to the normal size, the game resumes and the user must click for the new colour. 
 
-There are no penalties for clicking or missing a coloured word that is not in focus for the current level.
-
+There are no penalties for clicking or missing a coloured word that is not in focus for the current level. After reaching 30 captures, the levels are completed and the game runs infinitely, while increasing in speed.
 
