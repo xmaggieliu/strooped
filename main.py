@@ -11,7 +11,6 @@
 
 """ Imports """
 
-from readline import get_completer_delims
 import pygame
 import os
 import time
@@ -19,9 +18,6 @@ from random import randint, uniform, shuffle
 from datetime import datetime, timedelta
 from math import sin, cos, pi
 
-from pygame.font import Font
-
-# pygame.font.init()
 pygame.init()
 
 
@@ -73,38 +69,55 @@ DEAD = pygame.transform.scale(
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
+GRAY = (211, 211, 211)
+GOLD = (175, 130, 30)
+BROWN = (150, 75, 0)
+
 BLUE = (0, 64, 255)
 RED = (200, 30, 40)
 GREEN = (0, 150, 30)
 PURPLE = (150, 0, 205)
 ORANGE = (255, 92, 0)
 CYAN = (0, 180, 171)
-# PINK = (220, 40, 140)
-PINK = (255,105,180)
-GRAY = (211, 211, 211)
-GOLD = (175, 130, 30)
+PINK = (255, 105, 180)
 
+
+"""
+Level #     # of colours    # of seconds before new word appears  
+Level 0:    2 colours,      2 sec  
+Level 1:    2 colours,      1.5 sec
+Level 2:    4 colours,      1.5 sec
+Level 3:    4 colours,      1 sec
+Level 4:    7 colours,      1 sec
+Level 5:    7 colours,      0.5 sec
+"""
 
 levels = ((1, 2), (1, 1.5), (3, 1.5), (3, 1), (6, 1), (6, 0.5))
 
+
+# Word to rgb code dict
 colour_rgb = {"BLUE": BLUE, "RED": RED, "GREEN": GREEN, "PURPLE": PURPLE, "ORANGE": ORANGE, "CYAN": CYAN, "PINK": PINK}
 
+# List of words
 keys = list(colour_rgb.keys())
+# Reorder list
 shuffle(keys)
+# Remake dictionary
 shuffled_rgb = {key: colour_rgb[key] for key in keys}
 
+# Make tuple of colours in words
 letter = tuple(keys)
-
+# Make tuple of colours in rgb
 rgb = tuple(shuffled_rgb.values())
 
 
 """ Fonts """
-# intro title bg will be gray
-font_h1 = pygame.font.SysFont("ptmono", 60)
+
+font_title = pygame.font.SysFont("ptmono", 60)
 font_info = pygame.font.SysFont("andalemono", 28)
+font_res = pygame.font.SysFont("andalemono", 18)
 font_mini = pygame.font.SysFont("ptmono", 18)
-font_minimini = pygame.font.SysFont("ptmono", 14)
-font_p = pygame.font.SysFont("sfnsmono", 36)
+font_game = pygame.font.SysFont("sfnsmono", 36)
 font_man = pygame.font.SysFont("futura", 17)
 
 
@@ -113,15 +126,15 @@ class Colword:
     def __init__(self, word, colour, birth, left, top, dir):
         # (str) Colour word 
         self.word = word
-        # RGB code
+        # (tuple) RGB code
         self.colour = colour
-        # Time of birth
+        # (time) Time of birth
         self.birth = birth
-        # Left pos
+        # (int) Left pos
         self.left = left
-        # Top pos
+        # (int) Top pos
         self.top = top
-        # Direction of motion in degrees
+        # (float) Direction of motion in degrees
         self.dir = dir
 
 
@@ -139,16 +152,16 @@ def get_rad(x, y):
     if y < HEIGHT / 2:
         # If coord in first quadrant
         if x > WIDTH / 2:
-            return uniform(pi / 2, pi)
+            return uniform(pi, 3 * pi / 2)    
         # => coord in second quad
-        return uniform(0, pi / 2)
+        return uniform(3 * pi / 2, 2 * pi)
 
     # => coord is Q3 or Q4
     # If Q3
     if x < WIDTH / 2:
-        return uniform(3 * pi / 2, 2 * pi)
+        return uniform(0, pi / 2)
     # Then Q4
-    return uniform(pi, 3 * pi / 2)
+    return uniform(pi / 2, pi)
 
 
 
@@ -184,13 +197,17 @@ def in_bound(x, y, left, top, w, h):
 
 
 def draw_home(rand_col):
-    """ Draw intro/title page """
+    """ 
+    Draw intro/title page 
+    :param rand_col"""
+
+    WIN.fill(WHITE)
 
     n = len(letter) - 1
     w, h = 0, 0
     while h < HEIGHT:
         while w < WIDTH:
-            bg = font_p.render(letter[randint(0, n)], True, GRAY)
+            bg = font_game.render(letter[randint(0, n)], True, GRAY)
             WIN.blit(bg, (w, h))
             w += bg.get_width() + 4
         h += bg.get_height()
@@ -203,15 +220,13 @@ def draw_home(rand_col):
 
 
     # Draw title
-    title = font_h1.render("STROOPED!", True, rand_col, WHITE)
+    title = font_title.render("STROOPED!", True, rand_col, WHITE)
     WIN.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 3 - title.get_height() // 2))
     
     # Draw extra text
     mini = font_mini.render("How well can you distinguish your colours?", True, rand_col, WHITE)
-    WIN.blit(mini, (WIDTH // 2 - mini.get_width() // 2, HEIGHT * 3 // 4 - mini.get_height() - 10))
+    WIN.blit(mini, (WIDTH // 2 - mini.get_width() // 2, HEIGHT * 3 // 4 - mini.get_height()))
 
-    minimini = font_minimini.render("* Please DOUBLE-CLICK *", True, BLACK, WHITE)
-    WIN.blit(minimini, (WIDTH // 2 - minimini.get_width() // 2, HEIGHT * 3 // 4))
  
 
 
@@ -237,10 +252,10 @@ def draw_game(words, r, n, lives, clock, clicked, x, y, congruent, incongruent):
         capt = False
         # draw
         obj = words[i]
-        text = font_p.render(obj.word, True, obj.colour)
+        text = font_game.render(obj.word, True, obj.colour)
         WIN.blit(text, (obj.left, obj.top))
         words[i].left += int(cos(words[i].dir) * r)
-        words[i].top += int(sin(words[i].dir) * r)
+        words[i].top -= int(sin(words[i].dir) * r)
         out = out_of_bounds(words[i].left, words[i].top, text.get_width(), text.get_height())
         # Captured words[i]
         capt = (clicked and in_bound(x, y, words[i].left, words[i].top, text.get_width(), text.get_height()) and words[i].colour == col)
@@ -313,22 +328,22 @@ def draw_text(text):
 
 
 def draw_res(same, diff):
-    thanks = "Thank you for playing Strooped! Were you affected by the incongruency of the colour and the word?"
+    thanks = "Thank you for playing Strooped! The Stroop effect is our tendency to experience difficulty naming a physical colour when it is used to spell the name of a different colour. Were you affected by the incongruency of the colour and the word in the game? Here are the results!"
     draw_text(thanks)
     # Round to 3 decimal places
-    same = "Congruent time (s): " + str(round(same, 3))
-    diff = "Incongruent time (s): " + str(round(diff, 3))
+    same = "Avg time to click a word congruent to its colour (s): " + "{:.3f}".format(round(same, 3))
+    diff = "Avg time to click a word incongruent to its colour (s): " + "{:.3f}".format(round(diff, 3))
 
 
-    time_s = font_info.render(same, True, GOLD)
-    time_s_btn = pygame.Rect((WIDTH//2 - time_s.get_width() // 2, HEIGHT//2 - 25, time_s.get_width(), time_s.get_height()))
+    time_s = font_res.render(same, True, BROWN)
+    time_s_btn = pygame.Rect((WIDTH//2 - time_s.get_width() // 2, HEIGHT//2 - 15, time_s.get_width(), time_s.get_height()))
     time_s_rect = time_s.get_rect()
     time_s_rect.center = time_s_btn.center
     pygame.draw.rect(WIN, WHITE, time_s_btn)
     WIN.blit(time_s, time_s_rect)
 
-    time_d = font_info.render(diff, True, GOLD)
-    time_d_btn = pygame.Rect((WIDTH//2 - time_d.get_width() // 2, HEIGHT//2 + 25, time_d.get_width(), time_d.get_height()))
+    time_d = font_res.render(diff, True, BROWN)
+    time_d_btn = pygame.Rect((WIDTH//2 - time_d.get_width() // 2, HEIGHT//2 + 35, time_d.get_width(), time_d.get_height()))
     time_d_rect = time_d.get_rect()
     time_d_rect.center = time_d_btn.center
     pygame.draw.rect(WIN, WHITE, time_d_btn)
@@ -344,13 +359,15 @@ def main():
     in_man = False
     in_game = False
     gameover = False
+
     curr_words = []
     # Rate of motion
     r = 1.4
-
+    # Initialize mouse (x, y) position
     x, y = 0, 0
     lives = 3
     captures = 0
+
     # Current level
     l = 0
     col_variety = 1
@@ -360,6 +377,9 @@ def main():
     incongruent = []
     avg_same, avg_diff = 0, 0
 
+    bg_rate = 330
+    last_bg_change = datetime.now() - timedelta(milliseconds=bg_rate)
+
     while run:
         clock.tick(FPS)
         clicked = False
@@ -367,28 +387,34 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-            x, y, = 0, 0
+            x, y, = pygame.mouse.get_pos()
             if in_game and event.type == pygame.MOUSEBUTTONUP:
                 clicked = True
-                x, y = pygame.mouse.get_pos()
-
-        WIN.fill(WHITE)
 
         if in_home:
             # Draw home win
-            clock.tick(3)
-            draw_home(rgb[rand_num])
+            now = datetime.now()
+            if last_bg_change < now - timedelta(milliseconds=bg_rate):
+                last_bg_change = now
+                draw_home(rgb[rand_num])
             
 
             # Draw menu buttons
             menu_play = font_info.render("[PLAY]", True, GOLD)
+            # if hovering on btn
+            if in_bound(x, y, WIDTH//2 - menu_play.get_width() // 2, HEIGHT//2 - 25, menu_play.get_width(), menu_play.get_height()):
+                menu_play = font_info.render("[PLAY]", True, BROWN)
+
             menu_play_btn = pygame.Rect((WIDTH//2 - menu_play.get_width() // 2, HEIGHT//2 - 25, menu_play.get_width(), menu_play.get_height()))
             menu_play_rect = menu_play.get_rect()
             menu_play_rect.center = menu_play_btn.center
             pygame.draw.rect(WIN, WHITE, menu_play_btn)
             WIN.blit(menu_play, menu_play_rect)
 
+
             menu_man = font_info.render("[MANUAL]", True, GOLD)
+            if in_bound(x, y, WIDTH//2 - menu_man.get_width() // 2, HEIGHT//2 + 25, menu_man.get_width(), menu_man.get_height()):
+                menu_man = font_info.render("[MANUAL]", True, BROWN)
             menu_man_btn = pygame.Rect((WIDTH//2 - menu_man.get_width() // 2, HEIGHT//2 + 25, menu_man.get_width(), menu_man.get_height()))
             menu_man_rect = menu_man.get_rect()
             menu_man_rect.center = menu_man_btn.center
@@ -407,7 +433,7 @@ def main():
                     in_home = False
                     in_game = True
                     WIN.fill(WHITE)
-                    play = font_h1.render(f"CLICK FOR {letter[rand_num]}!", True, rgb[rand_num])
+                    play = font_title.render(f"CLICK FOR {letter[rand_num]}!", True, rgb[rand_num])
                     WIN.blit(play, (WIDTH // 2 - play.get_width() // 2, HEIGHT // 2 - play.get_height() // 2))
                     pygame.display.update()
                     time.sleep(0.5)
@@ -419,9 +445,13 @@ def main():
                     WIN.fill(WHITE)
 
         elif in_game:
+            WIN.fill(WHITE)
             col_variety, birth_rate = levels[l]
             r = 1.4 + captures * 0.1
-            count_info = font_info.render("LEVEL: " + str(l) + "  CAPTURES: " + str(captures) + "  COLOUR: " + str(letter[rand_num]), True, GOLD, WHITE)
+            if captures < 30:
+                count_info = font_info.render("LEVEL: " + str(l) + "  CAPTURES: " + str(captures) + "  COLOUR: " + str(letter[rand_num]), True, GOLD, WHITE)
+            else:
+                count_info = font_info.render("LEVEL:--  CAPTURES: " + str(captures) + "  COLOUR: " + str(letter[rand_num]), True, GOLD, WHITE)
             WIN.blit(count_info, (20, 20))
             lives, captured = draw_game(curr_words, r, rand_num, lives, clock, clicked, x, y, congruent, incongruent)
             
@@ -467,7 +497,7 @@ def main():
                 else:
                     word = letter[randint(0, col_variety)]
                 
-                text = font_p.render(word, True, col)
+                text = font_game.render(word, True, col)
                 w = randint(BORD_WIDTH, WIDTH - text.get_width() - BORD_WIDTH)
                 h = randint(BORD_WIDTH + HEART_D, HEIGHT - text.get_height() - BORD_WIDTH)
                 curr_words.append(Colword(word, col, now, w, h, get_rad(w, h)))
@@ -475,12 +505,19 @@ def main():
                 pygame.display.update()
             if lives <= 0:
                 # PRINT RESULTS
-                avg_same = sum(congruent) / len(congruent)
-                avg_diff = sum(incongruent) / len(incongruent)
+                if len(congruent) == 0:
+                    avg_same = 0
+                else:
+                    avg_same = sum(congruent) / len(congruent)
+                if len(incongruent) == 0:
+                    avg_diff = 0
+                else:
+                    avg_diff = sum(incongruent) / len(incongruent)
                 gameover = True
                 in_game = False
 
         else:
+            WIN.fill(WHITE)
             if gameover:
                 draw_res(avg_same, avg_diff)
 
@@ -494,6 +531,8 @@ There are no penalties for clicking or missing a coloured word that is not in fo
 """
                 draw_text(text)
             back = font_info.render("[HOME]", True, GOLD, WHITE)
+            if in_bound(x, y, 55, 20, back.get_width(), back.get_height()):
+                back = font_info.render("[HOME]", True, BROWN, WHITE)
             back_btn = pygame.Rect(55, 20, back.get_width(), back.get_height())
             back_rect = menu_play.get_rect()
             back_rect.center = back_btn.center
@@ -507,7 +546,6 @@ There are no penalties for clicking or missing a coloured word that is not in fo
                 if back_btn.collidepoint(mouse):
                     return 0
                 
-
     pygame.quit()
     return 1
 
@@ -515,19 +553,3 @@ if __name__ == "__main__":
     while not main():
         continue
 
-
-
-"""
-Level 0: 2 colours, 2 sec
-Level 1: 2 colours, 1.5 seconds
-Level 2: 4 colours, 1.5 seconds
-Level 3: 4 colours, 1 second
-Level 4: 7 colours, 1 second
-Level 5: 7 colours, 0.5 second
-
-"""
-
-"""
-replay game loop
-mention what congruent means
-"""
