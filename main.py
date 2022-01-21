@@ -11,6 +11,7 @@
 
 """ Imports """
 
+from readline import get_completer_delims
 import pygame
 import os
 import time
@@ -197,6 +198,9 @@ def draw_home(rand_col):
 
     # Draw background box
     pygame.draw.rect(WIN, WHITE, pygame.Rect(WIDTH // 5, HEIGHT//3 - 60, WIDTH - 2 * (WIDTH // 5), HEIGHT - 2 * (HEIGHT//3 - 70)), 200, 50)
+    # shadowy border
+    pygame.draw.rect(WIN, (253, 253, 253), pygame.Rect(WIDTH // 5, HEIGHT//3 - 60, WIDTH - 2 * (WIDTH // 5), HEIGHT - 2 * (HEIGHT//3 - 70)), 15, 50)
+
 
     # Draw title
     title = font_h1.render("STROOPED!", True, rand_col, WHITE)
@@ -230,6 +234,7 @@ def draw_game(words, r, n, lives, clock, clicked, x, y, congruent, incongruent):
     captured = False
 
     for i in range(len(words)):
+        capt = False
         # draw
         obj = words[i]
         text = font_p.render(obj.word, True, obj.colour)
@@ -237,16 +242,17 @@ def draw_game(words, r, n, lives, clock, clicked, x, y, congruent, incongruent):
         words[i].left += int(cos(words[i].dir) * r)
         words[i].top += int(sin(words[i].dir) * r)
         out = out_of_bounds(words[i].left, words[i].top, text.get_width(), text.get_height())
-        captured = captured or (clicked and in_bound(x, y, words[i].left, words[i].top, text.get_width(), text.get_height()) and words[i].colour == col)
-        if captured or out:
+        # Captured words[i]
+        capt = (clicked and in_bound(x, y, words[i].left, words[i].top, text.get_width(), text.get_height()) and words[i].colour == col)
+        captured = captured or capt
+        if capt or out:
             to_del.append(i)
         if out and words[i].colour == col:
             lost += 1
-        if captured:
+        if capt:
             # time_diff stored as timedelta obj
             time_diff = datetime.now() - words[i].birth
             time_diff = float(str(time_diff.seconds) + "." + str(time_diff.microseconds))
-            # GET THE FRUCNGIN WORD HERE!!
             if obj.word == letter[n]:
                 congruent.append(time_diff)
             else:
@@ -375,14 +381,14 @@ def main():
             
 
             # Draw menu buttons
-            menu_play = font_info.render("PLAY", True, GOLD)
+            menu_play = font_info.render("[PLAY]", True, GOLD)
             menu_play_btn = pygame.Rect((WIDTH//2 - menu_play.get_width() // 2, HEIGHT//2 - 25, menu_play.get_width(), menu_play.get_height()))
             menu_play_rect = menu_play.get_rect()
             menu_play_rect.center = menu_play_btn.center
             pygame.draw.rect(WIN, WHITE, menu_play_btn)
             WIN.blit(menu_play, menu_play_rect)
 
-            menu_man = font_info.render("MANUAL", True, GOLD)
+            menu_man = font_info.render("[MANUAL]", True, GOLD)
             menu_man_btn = pygame.Rect((WIDTH//2 - menu_man.get_width() // 2, HEIGHT//2 + 25, menu_man.get_width(), menu_man.get_height()))
             menu_man_rect = menu_man.get_rect()
             menu_man_rect.center = menu_man_btn.center
@@ -421,7 +427,7 @@ def main():
             
             if captured:
                 captures += 1
-                
+
             # If level up!
             if l != captures // 5 and captures < 30:
                 # level cannot surpass 5
@@ -456,9 +462,7 @@ def main():
                     if randint(0, 1):
                         word = letter[rand_num]
                     else:
-                        print(col_variety)
                         letter_cpy = [letter[i] for i in range(col_variety + 1) if i != rand_num]
-                        print(letter_cpy)
                         word = letter_cpy[randint(0, len(letter_cpy) - 1)]
                 else:
                     word = letter[randint(0, col_variety)]
@@ -471,8 +475,6 @@ def main():
                 pygame.display.update()
             if lives <= 0:
                 # PRINT RESULTS
-                print(f"{len(congruent)=}")
-                print(f"{len(incongruent)=}")
                 avg_same = sum(congruent) / len(congruent)
                 avg_diff = sum(incongruent) / len(incongruent)
                 gameover = True
@@ -492,7 +494,7 @@ There are no penalties for clicking or missing a coloured word that is not in fo
 """
                 draw_text(text)
             back = font_info.render("[HOME]", True, GOLD, WHITE)
-            back_btn = pygame.Rect(5, 20, back.get_width(), back.get_height())
+            back_btn = pygame.Rect(55, 20, back.get_width(), back.get_height())
             back_rect = menu_play.get_rect()
             back_rect.center = back_btn.center
             pygame.draw.rect(WIN, WHITE, back_btn)
@@ -503,15 +505,16 @@ There are no penalties for clicking or missing a coloured word that is not in fo
             if click == 1:
                 mouse = pygame.mouse.get_pos()
                 if back_btn.collidepoint(mouse):
-                    in_home = True
-                    in_man = False
-                    gameover = False
+                    return 0
                 
 
     pygame.quit()
+    return 1
 
 if __name__ == "__main__":
-    main()
+    while not main():
+        continue
+
 
 
 """
@@ -524,3 +527,7 @@ Level 5: 7 colours, 0.5 second
 
 """
 
+"""
+replay game loop
+mention what congruent means
+"""
