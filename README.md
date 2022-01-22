@@ -12,8 +12,3 @@ After every 5 captures, there will be a level up and a new physical colour to be
 
 There are no penalties for clicking or missing a coloured word that is not in focus for the current level. After reaching 30 captures, the levels are considered completed and the game runs infinitely, while increasing in speed.
 
-
-# Features
-
-# Advanced concepts used
-

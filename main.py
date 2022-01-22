@@ -466,16 +466,18 @@ def draw_text(text):
 
 
 
-def draw_res(same, diff):
+def draw_res(same, diff, captures, l):
 
     """
     Draw results page
     :param same: (float) average time to click words that correspond to their colours
     :param diff: (float) average time to click words that differ from their colours
+    :param captures: (int) number of captures
+    :param l: (int) highest level achieved
     """
 
     # Thanks & check for results text
-    thanks = "Thank you for playing Strooped! The Stroop effect is our tendency to experience difficulty naming a physical colour when it is used to spell the name of a different colour. Were you affected by the incongruency of the word to the colour in the game? Here are your results!"
+    thanks = "Thank you for playing Strooped! You captured " + str(captures) + " words(s) and achieved level " + str(l) + ". The Stroop effect is our tendency to experience difficulty naming a physical colour when it is used to spell the name of a different colour. Were you affected by the incongruency of the word to the colour in the game? Here are your results!"
     draw_text(thanks)
 
     # Round to 3 decimal places
@@ -870,7 +872,7 @@ def main():
 
             # Draw results page if game over
             if gameover:
-                draw_res(avg_same, avg_diff)
+                draw_res(avg_same, avg_diff, captures, l)
 
 
             # Explain how to play if in manual
@@ -949,7 +951,7 @@ draw_backboard()
 draw_home(rand_col)
 draw_game(words, r, n, lives, clock, clicked, x, y, congruent, incongruent)
 draw_text(text)
-draw_res(same, diff)
+draw_res(same, diff, captures, l)
 main()
 
 
@@ -1141,8 +1143,8 @@ function draw_text(text):
 end draw_text
 
 
-function draw_res(same, diff):
-    thanks = "Thank you for playing Strooped! The Stroop effect is our tendency to experience difficulty naming a physical colour when it is used to spell the name of a different colour. Were you affected by the incongruency of the colour and the word in the game? Here are the results!"
+function draw_res(same, diff, captures, l):
+    thanks = "Thank you for playing Strooped! You captured " + str(captures) + " word(s) and achieved level " + str(l) + ". The Stroop effect is our tendency to experience difficulty naming a physical colour when it is used to spell the name of a different colour. Were you affected by the incongruency of the word to the colour in the game? Here are your results!"
     draw_text(thanks)
     same = "Avg. time to click a word congruent to its colour (s): " + "{:.3f}".format(round(same, 3))
     diff = "Avg. time to click a word incongruent to its colour (s): " + "{:.3f}".format(round(diff, 3))
@@ -1349,7 +1351,7 @@ function main():
         else:
             WIN.fill(WHITE)
             if gameover:
-                draw_res(avg_same, avg_diff)
+                draw_res(avg_same, avg_diff, captures, l)
             if in_man:
                 text = '''
 After clicking `Play` in the home page, the window will display the first colour for the user to click for. Clicking the right coloured words will increase the `Captures` score and missing the right coloured words will result in a loss of life, indicated by a quick pause in the game in which a red heart pops into a gray one. A word will be considered to be missed when it hits one of the borders of the game. 
