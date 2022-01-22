@@ -477,7 +477,7 @@ def draw_res(same, diff, captures, l):
     """
 
     # Thanks & check for results text
-    thanks = "Thank you for playing Strooped! You captured " + str(captures) + " words(s) and achieved level " + str(l) + ". The Stroop effect is our tendency to experience difficulty naming a physical colour when it is used to spell the name of a different colour. Were you affected by the incongruency of the word to the colour in the game? Here are your results!"
+    thanks = "Thank you for playing Strooped! You captured " + str(captures) + " word(s) and achieved level " + str(l) + ". The Stroop effect is our tendency to experience difficulty naming a physical colour when it is used to spell the name of a different colour. Were you affected by the incongruency of the word to the colour in the game? Here are your results!"
     draw_text(thanks)
 
     # Round to 3 decimal places
