@@ -9,6 +9,7 @@
 # ==============================================================================>
 
 
+
 """ Imports """
 
 import pygame
@@ -21,47 +22,61 @@ from math import sin, cos, pi
 pygame.init()
 
 
+
 """ Game constants"""
 
+# Normal FPS
 FPS = 60
-DYING = 30
+
+# Slower FPS
+DELAYED = 30
+
+
 WIDTH, HEIGHT = 900, 500
+
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
+
 pygame.display.set_caption("Strooped!")
+
 
 
 """ Border constants """
 
 BORD_WIDTH = 10
-# left
+
+# Left
 BORDER_L = pygame.Rect(0, 0, BORD_WIDTH, HEIGHT)
-# right
+
+# Right
 BORDER_R = pygame.Rect(WIDTH - BORD_WIDTH, 0, BORD_WIDTH, HEIGHT)
-# top
+
+# Top
 BORDER_T = pygame.Rect(0, 0, WIDTH, BORD_WIDTH)
-# bottom
+
+# Bottom
 BORDER_B = pygame.Rect(0, HEIGHT - BORD_WIDTH, WIDTH, BORD_WIDTH)
 
 
-""" HEART IMG """
+
+""" HEART IMAGES """
 
 # Heart dimensions
 HEART_D = 30
 
-# Red heart 
-LIFE_IMG = pygame.image.load(
-    os.path.join('Assets', 'red.png')
-)
-LIFE = pygame.transform.scale(
-    LIFE_IMG, (HEART_D, HEART_D)
-)
-# Grey heart
-DEAD_IMG = pygame.image.load(
-    os.path.join('Assets', 'grey.png')
-)
-DEAD = pygame.transform.scale(
-    DEAD_IMG, (HEART_D, HEART_D)
-)
+
+# Load red heart image 
+LIFE_IMG = pygame.image.load(os.path.join('Assets', 'red.png'))
+
+# Resize red heart image
+LIFE = pygame.transform.scale(LIFE_IMG, (HEART_D, HEART_D))
+
+
+# Load grey heart image
+DEAD_IMG = pygame.image.load(os.path.join('Assets', 'grey.png'))
+
+# Resize grey heart image
+DEAD = pygame.transform.scale(DEAD_IMG, (HEART_D, HEART_D))
+
 
 
 """ RGB Colour Code Constants """
@@ -90,51 +105,78 @@ Level 2:    4 colours,      1.5 sec
 Level 3:    4 colours,      1 sec
 Level 4:    7 colours,      1 sec
 Level 5:    7 colours,      0.5 sec
+Level --    ^               ^
 """
 
 levels = ((1, 2), (1, 1.5), (3, 1.5), (3, 1), (6, 1), (6, 0.5))
 
 
-# Word to rgb code dict
+# Word to rgb code pairs 
 colour_rgb = {"BLUE": BLUE, "RED": RED, "GREEN": GREEN, "PURPLE": PURPLE, "ORANGE": ORANGE, "CYAN": CYAN, "PINK": PINK}
+
 
 # List of words
 keys = list(colour_rgb.keys())
+
 # Reorder list
 shuffle(keys)
+
 # Remake dictionary
 shuffled_rgb = {key: colour_rgb[key] for key in keys}
 
+
 # Make tuple of colours in words
 letter = tuple(keys)
+
 # Make tuple of colours in rgb
 rgb = tuple(shuffled_rgb.values())
 
 
+
 """ Fonts """
 
+# Game title font
 font_title = pygame.font.SysFont("ptmono", 60)
+
+# Game menu options & game banner stats font
 font_info = pygame.font.SysFont("andalemono", 28)
+
+# Game results font
 font_res = pygame.font.SysFont("andalemono", 18)
+
+# More info font (small-sized)
 font_mini = pygame.font.SysFont("ptmono", 18)
+
+# Game colour words font
 font_game = pygame.font.SysFont("sfnsmono", 36)
+
+# Game manual font
 font_man = pygame.font.SysFont("futura", 17)
 
 
+
 """ Data Struct """
+
 class Colword:
+
     def __init__(self, word, colour, birth, left, top, dir):
+
         # (str) Colour word 
         self.word = word
-        # (tuple) RGB code
+
+        # (tuple) RGB value
         self.colour = colour
-        # (time) Time of birth
+
+        # (datetime) Time of birth
         self.birth = birth
-        # (int) Left pos
+
+        # (int) Left position
         self.left = left
-        # (int) Top pos
+
+        # (int) Top position
         self.top = top
-        # (float) Direction of motion in degrees
+
+        # (float) Direction of motion in radians
         self.dir = dir
 
 
@@ -142,37 +184,48 @@ class Colword:
 # FUNCTIONS -----------------------------------------------------------------------------+
 
 def get_rad(x, y):
+
     """ 
-    Get direction of travel in radians
+    Get random direction of travel in radians based on current coordinate to ensure Colword travels AWAY from its closest borders
     :param x: (int) current x position; horizontal position; how right it is on the screen
     :param y: (int) current y position; vertical position; how down it is on the screen
-    :return: (float) direction of travel in radian
+    :return: (float) random direction of travel in radians
     """
 
+    # If coordinate is above the horizontal
     if y < HEIGHT / 2:
-        # If coord in first quadrant
+
+        # If coordinate is right of the vertical
         if x > WIDTH / 2:
+
+            # Q1 (top-right quadrant) => let the range of direction be left to down
             return uniform(pi, 3 * pi / 2)    
-        # => coord in second quad
+
+        # Q2 (top-left quadrant) => let the range of direction be down to right
         return uniform(3 * pi / 2, 2 * pi)
 
-    # => coord is Q3 or Q4
-    # If Q3
+    # If coordinate is left of the vertical (has been established that it is not above the horizontal)
     if x < WIDTH / 2:
+
+        # Q3 (bottom-left) => let the range of dir. be right to up
         return uniform(0, pi / 2)
-    # Then Q4
+
+    # Q4 (bottom-right) => let the range of dir. be up to left
     return uniform(pi / 2, pi)
 
 
 
 def out_of_bounds(left, top, w, h):
+
     """
-    If text touched the boundary
-    :param left: (int) coord of the left of text
-    :param top: (int) coord of the top of text
+    If text touched the game boundaries
+    :param left: (int) coordinate of the left of text
+    :param top: (int) coordinate of the top of text
     :param w: (int) width of text
-    :pram h: (int) height of text
+    :param h: (int) height of text
+    :return: (bool) True for out of bounds, False for in bounds
     """
+
     if left <= BORD_WIDTH or top <= BORD_WIDTH + HEART_D or left + w >= WIDTH - BORD_WIDTH or top + h >= HEIGHT - BORD_WIDTH:
         return True
     return False
@@ -180,46 +233,71 @@ def out_of_bounds(left, top, w, h):
 
 
 def in_bound(x, y, left, top, w, h):
+
     """
-    If mouse click is on the text
+    If mouse is within the boundaries of a text/obj
     :param x: (int) x coord of mouse
     :param y: (int) y xoord of mouse
-    :param left: (int) left coord of text
-    :param top: (int) top coord of text
+    :param left: (int) left coordinate of text
+    :param top: (int) top coordinate of text
     :param w: (int) width of text
     :param h: (int) height of text
-    :return: (bool) whether the mouse clicked inside the text's boundary 
+    :return: (bool) whether the mouse is within the boundaries of a text/obj
     """
+
     if left <= x <= left + w and top <= y <= top + h:
         return True
     return False
 
 
+def draw_backboard():
+
+    """ Draw white board as a background for text & buttons """
+
+    # Draw background box with rounded corners
+    pygame.draw.rect(WIN, WHITE, pygame.Rect(WIDTH // 5, HEIGHT//3 - 60, WIDTH - 2 * (WIDTH // 5), HEIGHT - 2 * (HEIGHT//3 - 70)), 200, 50)
+    
+    # Draw light shadowy borders to the box
+    pygame.draw.rect(WIN, (245, 245, 245), pygame.Rect(WIDTH // 5, HEIGHT//3 - 60, WIDTH - 2 * (WIDTH // 5), HEIGHT - 2 * (HEIGHT//3 - 70)), 10, 50)
+
+
+
 
 def draw_home(rand_col):
+
     """ 
     Draw intro/title page 
-    :param rand_col"""
+    :param rand_col: (RGB tuple) random colour
+    """
 
     WIN.fill(WHITE)
 
+
+    # Max index in the letter tuple
     n = len(letter) - 1
+
+    # Initialize left and top positions 
     w, h = 0, 0
+
     while h < HEIGHT:
         while w < WIDTH:
+
+            # Add a colour word in the background
             bg = font_game.render(letter[randint(0, n)], True, GRAY)
             WIN.blit(bg, (w, h))
+
+            # Increment left position
             w += bg.get_width() + 4
+
+        # Increment top position (as h increases, the position becomes more down as pygame's (0,0) is top-left corner)
         h += bg.get_height()
+
+        # Reinitialize w to the very left of the screen
         w = 0
 
-    # Draw background box
-    pygame.draw.rect(WIN, WHITE, pygame.Rect(WIDTH // 5, HEIGHT//3 - 60, WIDTH - 2 * (WIDTH // 5), HEIGHT - 2 * (HEIGHT//3 - 70)), 200, 50)
-    # shadowy border
-    pygame.draw.rect(WIN, (253, 253, 253), pygame.Rect(WIDTH // 5, HEIGHT//3 - 60, WIDTH - 2 * (WIDTH // 5), HEIGHT - 2 * (HEIGHT//3 - 70)), 15, 50)
+    draw_backboard()
 
-
-    # Draw title
+    # Draw title name 
     title = font_title.render("STROOPED!", True, rand_col, WHITE)
     WIN.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 3 - title.get_height() // 2))
     
@@ -227,27 +305,45 @@ def draw_home(rand_col):
     mini = font_mini.render("How well can you distinguish your colours?", True, rand_col, WHITE)
     WIN.blit(mini, (WIDTH // 2 - mini.get_width() // 2, HEIGHT * 3 // 4 - mini.get_height()))
 
- 
 
 
 def draw_game(words, r, n, lives, clock, clicked, x, y, congruent, incongruent):
+
     """
     Draw game window
     :param words: (list) Colword objects
     :param r: (int) 
+    :param n: (int) rand. num
+    :param lives: (int) # of lives left
+    :param clock: (clock)
+    :param clicked: (bool) if there was a click
+    :param x: (int) x pos. of mouse
+    :param y: (int) y pos of mouse
+    :param congruent: (list) times for congruent words (words correspond to colour)
+    :param incongruent: (list) times for incongruent words (words different from colour)
+    :return: # of lives left, new capture number
     """
+
+    # Draw borders
     pygame.draw.rect(WIN, BLACK, BORDER_L)
     pygame.draw.rect(WIN, BLACK, BORDER_R)
     pygame.draw.rect(WIN, BLACK, BORDER_T)
     pygame.draw.rect(WIN, BLACK, BORDER_B)
 
+
+    # Initialize col as the current focus colour (physical colour to be clicked)
     col = rgb[n]
 
-
+    # Stores indices of curr_words to be removed
     to_del = []
+
+    # Stores number of lost lives
     lost = 0
+
+    # Whether a word has been captured
     captured = False
 
+###### WOULD TRAVERSING THRU REVERSED WORDS BE MORE EFFICIENT???
     for i in range(len(words)):
         capt = False
         # draw
@@ -276,80 +372,116 @@ def draw_game(words, r, n, lives, clock, clicked, x, y, congruent, incongruent):
     for i in to_del[::-1]:
         words.pop(i)
     
+
+    # Initialize left position
     w = WIDTH - 60
+
     # Draw red hearts
     for i in range(lives):
         WIN.blit(LIFE, (w, 20))
         w -= 50
+
     # Draw lost hearts
     for i in range(3 - lives):
         WIN.blit(DEAD, (w, 20))
         w -= 50
+
     # Move blit cursor back to most left red heart
     w += 50 * (3 - lives + 1)
+
     pygame.display.update()
+
     # Transition red to lost hearts
     for i in range(lost):
+
         # Enlarge red heart
         for j in range(10):
-            clock.tick(DYING)
+            clock.tick(DELAYED)
             WIN.blit(pygame.transform.scale(LIFE_IMG, (HEART_D + j, HEART_D + j)), (int(w - j/2), int(20 - j/2)))
             pygame.display.update()
+
         # Change colour and reduce size
         for j in range(10, 0, -1):
-            clock.tick(DYING)
+            clock.tick(DELAYED)
             pygame.draw.rect(WIN, WHITE, pygame.Rect(w - 5, 15, 40, 40))
             WIN.blit(pygame.transform.scale(DEAD_IMG, (HEART_D + j, HEART_D + j)), (int(w - j/2), int(20 - j/2)))
             pygame.display.update()
+        
+        # Increment left position
         w += 50
         
+    
     return lives - lost, captured
 
 
-def draw_text(text):
-    WIN.fill(WHITE)
-    
-    text = text.split()
 
+def draw_text(text):
+
+    """
+    Draw text on the screen
+    :param text: text that would be shown on the screen
+    """
+
+    WIN.fill(WHITE)
+
+    # Split text into words
+    text = text.split()
+    
+    # String index
     i = 0
+
+    # Number of words
     n = len(text)
+
+    # Initialized left and top
     w, h = 60, 75
+
     while h < HEIGHT - 60 and i < n:
         while w < WIDTH - 60 and i < n:
+
             currLine = font_man.render(text[i], False, BLACK)
-            currPos = (w, h)
+
+            # Go to newline if max-width of text has been reached
             if currLine.get_width() + w >= WIDTH - 60:
                 break
-            WIN.blit(currLine, currPos)
+
+            # Add to the screen
+            WIN.blit(currLine, (w, h))
+
+            # Increment index and left position
             i += 1
             w += currLine.get_width() + 10
+
+        # Increment top to the next line and go back to the very left
         h += currLine.get_height() + 5
         w = 60
 
 
+
 def draw_res(same, diff):
+
+    """
+    Draw results page
+    :param same: (float) average time to click words that correspond to their colours
+    :param diff: (float) average time to click words that differ from their colours
+    """
+
+    # Thanks & check for results text
     thanks = "Thank you for playing Strooped! The Stroop effect is our tendency to experience difficulty naming a physical colour when it is used to spell the name of a different colour. Were you affected by the incongruency of the colour and the word in the game? Here are the results!"
     draw_text(thanks)
+
     # Round to 3 decimal places
-    same = "Avg time to click a word congruent to its colour (s): " + "{:.3f}".format(round(same, 3))
-    diff = "Avg time to click a word incongruent to its colour (s): " + "{:.3f}".format(round(diff, 3))
+    same = "Avg. time to click a word congruent to its colour (s): " + "{:.3f}".format(round(same, 3))
+    diff = "Avg. time to click a word incongruent to its colour (s): " + "{:.3f}".format(round(diff, 3))
 
-
+    # Draw congruent results
     time_s = font_res.render(same, True, BROWN)
-    time_s_btn = pygame.Rect((WIDTH//2 - time_s.get_width() // 2, HEIGHT//2 - 15, time_s.get_width(), time_s.get_height()))
-    time_s_rect = time_s.get_rect()
-    time_s_rect.center = time_s_btn.center
-    pygame.draw.rect(WIN, WHITE, time_s_btn)
-    WIN.blit(time_s, time_s_rect)
+    WIN.blit(time_s, (WIDTH//2 - time_s.get_width() // 2, HEIGHT//2 - 15))
 
+    # Draw incongruent results
     time_d = font_res.render(diff, True, BROWN)
-    time_d_btn = pygame.Rect((WIDTH//2 - time_d.get_width() // 2, HEIGHT//2 + 35, time_d.get_width(), time_d.get_height()))
-    time_d_rect = time_d.get_rect()
-    time_d_rect.center = time_d_btn.center
-    pygame.draw.rect(WIN, WHITE, time_d_btn)
-    WIN.blit(time_d, time_d_rect)  
-
-
+    WIN.blit(time_d, (WIDTH//2 - time_d.get_width() // 2, HEIGHT//2 + 35))
+ 
 
 
 def main():
@@ -358,6 +490,7 @@ def main():
     in_home = True
     in_man = False
     in_game = False
+    in_pause = False
     gameover = False
 
     curr_words = []
@@ -401,7 +534,7 @@ def main():
 
             # Draw menu buttons
             menu_play = font_info.render("[PLAY]", True, GOLD)
-            # if hovering on btn
+            # If hovering on btn
             if in_bound(x, y, WIDTH//2 - menu_play.get_width() // 2, HEIGHT//2 - 25, menu_play.get_width(), menu_play.get_height()):
                 menu_play = font_info.render("[PLAY]", True, BROWN)
 
@@ -453,6 +586,18 @@ def main():
             else:
                 count_info = font_info.render("LEVEL:--  CAPTURES: " + str(captures) + "  COLOUR: " + str(letter[rand_num]), True, GOLD, WHITE)
             WIN.blit(count_info, (20, 20))
+
+            pause = font_info.render("[PAUSE]", True, GOLD)
+            # if hovering on btn
+            if in_bound(x, y, WIDTH - 20 - pause.get_width(), HEIGHT - pause.get_height() - 20, pause.get_width(), pause.get_height()):
+                pause = font_info.render("[PAUSE]", True, BROWN)
+
+            pause_btn = pygame.Rect(WIDTH - 20 - pause.get_width(), HEIGHT - pause.get_height() - 20, pause.get_width(), pause.get_height())
+            pause_rect = pause.get_rect()
+            pause_rect.center = pause_btn.center
+            pygame.draw.rect(WIN, WHITE, pause_btn)
+            WIN.blit(pause, pause_rect)
+
             lives, captured = draw_game(curr_words, r, rand_num, lives, clock, clicked, x, y, congruent, incongruent)
             
             if captured:
@@ -469,16 +614,25 @@ def main():
                 # Renew words list
                 curr_words = []
                 for j in range(3):
-                    clock.tick(DYING)
+                    clock.tick(DELAYED)
                     count_info = pygame.font.SysFont("andalemono", font_weight + j).render(info, True, rgb[rand_num], WHITE)
                     WIN.blit(count_info, (int(20 - j/2), int(20 - j/2)))
                     pygame.display.update()
                 # Change colour and reduce size
                 for j in range(3, 0, -1):
-                    clock.tick(DYING)
+                    clock.tick(DELAYED)
                     count_info = pygame.font.SysFont("andalemono", font_weight + j).render(info, True, rgb[rand_num], WHITE)
                     WIN.blit(count_info, (int(20 - j/2), int(20 - j/2)))
                     pygame.display.update()
+
+
+            click, _, _ = pygame.mouse.get_pressed()
+            if click == 1:
+                mouse = pygame.mouse.get_pos()
+                if pause_btn.collidepoint(mouse):
+                    in_pause = True
+                    in_game = False
+                    draw_backboard()
 
             now = datetime.now()
 
@@ -516,6 +670,58 @@ def main():
                 gameover = True
                 in_game = False
 
+        elif in_pause:
+            # Draw menu buttons
+            cont = font_info.render("[CONTINUE]", True, GOLD)
+            # If hovering on btn
+            if in_bound(x, y, WIDTH//2 - cont.get_width() // 2, HEIGHT//2 - 75, cont.get_width(), cont.get_height()):
+                cont = font_info.render("[CONTINUE]", True, BROWN)
+
+            cont_btn = pygame.Rect((WIDTH//2 - cont.get_width() // 2, HEIGHT//2 - 75, cont.get_width(), cont.get_height()))
+            cont_rect = cont.get_rect()
+            cont_rect.center = cont_btn.center
+            pygame.draw.rect(WIN, WHITE, cont_btn)
+            WIN.blit(cont, cont_rect)
+
+            # Draw menu buttons
+            to_man = font_info.render("[MANUAL]", True, GOLD)
+            # If hovering on btn
+            if in_bound(x, y, WIDTH//2 - to_man.get_width() // 2, HEIGHT//2, to_man.get_width(), to_man.get_height()):
+                to_man = font_info.render("[MANUAL]", True, BROWN)
+
+            to_man_btn = pygame.Rect((WIDTH//2 - to_man.get_width() // 2, HEIGHT//2, to_man.get_width(), to_man.get_height()))
+            to_man_rect = to_man.get_rect()
+            to_man_rect.center = to_man_btn.center
+            pygame.draw.rect(WIN, WHITE, to_man_btn)
+            WIN.blit(to_man, to_man_rect)
+
+
+            # Draw menu buttons
+            to_quit = font_info.render("[QUIT]", True, GOLD)
+            # If hovering on btn
+            if in_bound(x, y, WIDTH//2 - to_quit.get_width() // 2, HEIGHT//2 + 75, to_quit.get_width(), to_quit.get_height()):
+                to_quit = font_info.render("[QUIT]", True, BROWN)
+
+            to_quit_btn = pygame.Rect((WIDTH//2 - to_quit.get_width() // 2, HEIGHT//2 + 75, to_quit.get_width(), to_quit.get_height()))
+            to_quit_rect = to_quit.get_rect()
+            to_quit_rect.center = to_quit_btn.center
+            pygame.draw.rect(WIN, WHITE, to_quit_btn)
+            WIN.blit(to_quit, to_quit_rect)
+
+            pygame.display.update()
+
+            click, _, _ = pygame.mouse.get_pressed()
+            if click == 1:
+                mouse = pygame.mouse.get_pos()
+                if cont_btn.collidepoint(mouse):
+                    in_pause = False
+                    in_game = True
+                elif to_man_btn.collidepoint(mouse):
+                    in_man = True
+                    in_pause = False
+                elif to_quit_btn.collidepoint(mouse):
+                    return 0
+
         else:
             WIN.fill(WHITE)
             if gameover:
@@ -530,6 +736,15 @@ After every 5 captures, there will be a level up and a new colour to be clicked 
 There are no penalties for clicking or missing a coloured word that is not in focus for the current level. After reaching 30 captures, the levels are completed and the game runs infinitely, while increasing in speed.
 """
                 draw_text(text)
+                play_from_man = font_info.render("[PLAY]", True, GOLD, WHITE)
+                if in_bound(x, y, 165, 20, play_from_man.get_width(), play_from_man.get_height()):
+                    play_from_man = font_info.render("[PLAY]", True, BROWN, WHITE)
+                play_from_man_btn = pygame.Rect(165, 20, play_from_man.get_width(), play_from_man.get_height())
+                play_from_man_rect = menu_play.get_rect()
+                play_from_man_rect.center = play_from_man_btn.center
+                pygame.draw.rect(WIN, WHITE, play_from_man_btn)
+                WIN.blit(play_from_man, play_from_man_rect)
+
             back = font_info.render("[HOME]", True, GOLD, WHITE)
             if in_bound(x, y, 55, 20, back.get_width(), back.get_height()):
                 back = font_info.render("[HOME]", True, BROWN, WHITE)
@@ -545,6 +760,9 @@ There are no penalties for clicking or missing a coloured word that is not in fo
                 mouse = pygame.mouse.get_pos()
                 if back_btn.collidepoint(mouse):
                     return 0
+                if play_from_man_btn.collidepoint(mouse):
+                    in_man = False
+                    in_game = True
                 
     pygame.quit()
     return 1
